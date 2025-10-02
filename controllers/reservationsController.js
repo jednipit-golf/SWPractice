@@ -1,4 +1,5 @@
 const Reservation = require('../models/Reservation');
+const MassageShop = require('../models/MassageShop');
 
 //@desc     Get all reservations
 //@route    GET /api/v1/reservations
@@ -32,6 +33,7 @@ exports.getReservations = async (req, res, next) => {
             data: reservations
         });
     } catch (error) {
+        console.log(error);
         res.status(500).json({
             success: false,
             message: 'Cannot find reservations'
