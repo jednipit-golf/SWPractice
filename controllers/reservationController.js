@@ -3,7 +3,7 @@ const MassageShop = require('../models/MassageShop');
 const { validateAppointmentTime } = require('../utils/validateTime');
 
 //@desc     Get all reservations
-//@route    GET /api/v1/reservations
+//@route    GET /api/v1/reservation
 //@access   Private
 exports.getReservations = async (req, res, next) => {
     try {
@@ -43,7 +43,7 @@ exports.getReservations = async (req, res, next) => {
 };
 
 //@desc     Get single reservation
-//@route    GET /api/v1/reservations/:id
+//@route    GET /api/v1/reservation/:id
 //@access   Private
 exports.getReservationsById = async (req, res, next) => {
     try {
@@ -80,7 +80,7 @@ exports.getReservationsById = async (req, res, next) => {
 };
 
 //@desc     Add reservation
-//@route    POST /api/v1/reservations
+//@route    POST /api/v1/reservation
 //@access   Private
 exports.addReservations = async (req, res, next) => {
     try {
@@ -94,7 +94,7 @@ exports.addReservations = async (req, res, next) => {
                 message: 'Massage shop not found'
             });
         }
-        
+
         // Validate appointment time is within operating hours
         if (!validateAppointmentTime(req.body.apptDate, massageShop.openTime, massageShop.closeTime)) {
             return res.status(400).json({
@@ -130,7 +130,7 @@ exports.addReservations = async (req, res, next) => {
 };
 
 //@desc     Update reservation
-//@route    PUT /api/v1/reservations/:id
+//@route    PUT /api/v1/reservation/:id
 //@access   Private
 exports.updateReservations = async (req, res, next) => {
     try {
@@ -148,6 +148,14 @@ exports.updateReservations = async (req, res, next) => {
             return res.status(401).json({
                 success: false,
                 message: 'User ' + req.user.id + ' is not authorized to update this reservation'
+            });
+        }
+
+        // Check if user is trying to update the user field
+        if (req.body.user && req.user.role !== 'admin') {
+            return res.status(401).json({
+                success: false,
+                message: 'Only admins can change the user of a reservation'
             });
         }
 
@@ -191,7 +199,7 @@ exports.updateReservations = async (req, res, next) => {
 };
 
 //@desc     Delete reservation
-//@route    DELETE /api/v1/reservations/:id
+//@route    DELETE /api/v1/reservation/:id
 //@access   Private
 exports.deleteReservations = async (req, res, next) => {
     try {

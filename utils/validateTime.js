@@ -6,14 +6,14 @@ const timeToMinutes = (timeString) => {
 
 // ดึงชั่วโมง/นาทีตาม timezone ไทยจริง ๆ
 const getThailandTimeParts = (date) => {
-    const options = { 
-        timeZone: 'Asia/Bangkok', 
-        hour: '2-digit', 
+    const options = {
+        timeZone: 'Asia/Bangkok',
+        hour: '2-digit',
         minute: '2-digit',
-        hour12: false 
+        hour12: false
     };
     const parts = new Intl.DateTimeFormat('en-GB', options).formatToParts(date);
-  
+
     const hours = parseInt(parts.find(p => p.type === 'hour').value, 10);
     const minutes = parseInt(parts.find(p => p.type === 'minute').value, 10);
 
@@ -31,7 +31,7 @@ const validateAppointmentTime = (apptDate, openTime, closeTime) => {
     const apptMinutes = apptHour * 60 + apptMinute;
     const openMinutes = timeToMinutes(openTime);
     const closeMinutes = timeToMinutes(closeTime);
-    
+
     // Debug logging
     console.log('UTC Date:', apptDate);
     console.log('Thailand Time:', date.toLocaleString('en-GB', { timeZone: 'Asia/Bangkok' }));
@@ -40,11 +40,11 @@ const validateAppointmentTime = (apptDate, openTime, closeTime) => {
     console.log('Appointment Time (minutes):', apptMinutes, `(${apptHour}:${apptMinute.toString().padStart(2, '0')})`);
     console.log('Open Time (minutes):', openMinutes, `(${openTime})`);
     console.log('Close Time (minutes):', closeMinutes, `(${closeTime})`);
-    
+
     // Check if appointment time is within operating hours (inclusive)
     const isValid = apptMinutes >= openMinutes && apptMinutes <= closeMinutes;
     console.log('Is Valid:', isValid);
-    
+
     return isValid;
 };
 
