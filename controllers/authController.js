@@ -19,28 +19,62 @@ exports.register=async (req,res,next)=>{
             });
         }
 
-        // Generate verification token
-        const verificationToken = crypto.randomBytes(20).toString('hex');
-        const verificationExpire = new Date(Date.now() + 3600000); // 1 hour
+        // Check if user already exists in unverified users
+        const existingUnverifiedUser = await UserUnverified.findOne({email});
+        
+        // Check rate limiting for existing unverified users
+        if (existingUnverifiedUser) {
+            const timeSinceLastToken = Date.now() - existingUnverifiedUser.lastTokenSent.getTime();
+            if (timeSinceLastToken < 90000) { // 90000
+                const waitTime = Math.ceil((60000 - timeSinceLastToken) / 1000);
+                return res.status(429).json({
+                    success: false,
+                    message: `Please wait ${waitTime} seconds before requesting a new verification token`
+                });
+            }
+        }
 
-        // Create unverified user
-        const userUnverified = await UserUnverified.create({
-            name, 
-            email,
-            telephone,
-            password, 
-            role,
-            verificationToken,
-            verificationExpire
-        });
+        // Generate verification token (6-digit number)
+        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationExpire = new Date(Date.now() + 600000); // 10 minutes
+        
+        let userUnverified;
+        if (existingUnverifiedUser) {
+            // For existing users, we need to manually handle hashing since pre('save') doesn't run on findByIdAndUpdate
+            existingUnverifiedUser.name = name;
+            existingUnverifiedUser.telephone = telephone;
+            existingUnverifiedUser.password = password;
+            existingUnverifiedUser.role = role;
+            existingUnverifiedUser.verificationToken = verificationToken;
+            existingUnverifiedUser.verificationExpire = verificationExpire;
+            existingUnverifiedUser.lastTokenSent = new Date();
+            existingUnverifiedUser.mistakes = 0;
+            
+            // Save to trigger pre('save') middleware for hashing
+            userUnverified = await existingUnverifiedUser.save();
+        } else {
+            // Create new unverified user
+            userUnverified = await UserUnverified.create({
+                name, 
+                email,
+                telephone,
+                password, 
+                role,
+                verificationToken,
+                verificationExpire,
+                lastTokenSent: new Date(),
+                mistakes: 0
+            });
+        }
 
-        // Send verification email
+        // Send verification email with plaintext token
         await sendVerificationEmail(email, verificationToken);
 
         res.status(201).json({
             success: true,
-            verificationToken, // In production, this should be sent via email
-            message: 'Registration successful. Please check your email for verification.'
+            message: existingUnverifiedUser 
+                ? 'New verification token sent. Please check your email for verification.'
+                : 'Registration successful. Please check your email for verification.'
         });
     } catch(err){ 
         res.status(400).json({success:false, message: err.message}); 
@@ -143,14 +177,42 @@ exports.verifyUser = async (req, res, next) => {
             });
         }
 
+        // Hash the provided token to compare with stored hash
+        const hashedToken = crypto.createHash('sha256').update(verificationToken).digest('hex');
+
         // Find unverified user
         const unverifiedUser = await UserUnverified.findOne({
             email,
-            verificationToken,
+            verificationToken: hashedToken,
             verificationExpire: { $gt: Date.now() }
         }).select('+password');
 
         if (!unverifiedUser) {
+            // Find user to increment mistakes counter
+            const userForMistake = await UserUnverified.findOne({ email });
+            
+            if (userForMistake) {
+                const newMistakeCount = userForMistake.mistakes + 1;
+                
+                if (newMistakeCount >= 5) {
+                    // Delete user after 5 wrong attempts
+                    await UserUnverified.findByIdAndDelete(userForMistake._id);
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Too many failed attempts. Please register again.'
+                    });
+                } else {
+                    // Increment mistake counter
+                    await UserUnverified.findByIdAndUpdate(userForMistake._id, {
+                        mistakes: newMistakeCount
+                    });
+                    return res.status(400).json({
+                        success: false,
+                        message: `Invalid verification token. ${5 - newMistakeCount} attempts remaining.`
+                    });
+                }
+            }
+            
             return res.status(400).json({
                 success: false,
                 message: 'Invalid or expired verification token'

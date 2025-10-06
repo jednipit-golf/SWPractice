@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const UserUnverifiedSchema = new mongoose.Schema({
     name: {
@@ -44,6 +45,14 @@ const UserUnverifiedSchema = new mongoose.Schema({
         default: Date.now,
         expires: 3600 // Document will be automatically deleted after 1 hour if not verified
     },
+    lastTokenSent: {
+        type: Date,
+        default: Date.now
+    },
+    mistakes: {
+        type: Number,
+        default: 0
+    },
     createdAt: {
         type: Date,
         default: Date.now 
@@ -57,6 +66,16 @@ UserUnverifiedSchema.pre('save',async function(next) {
     }
     const salt = await bcrypt.genSalt (10);
     this.password=await bcrypt.hash(this.password,salt);
+});
+
+// Hash verification token before saving
+UserUnverifiedSchema.pre('save', function(next) {
+    if (!this.isModified('verificationToken')) {
+        return next();
+    }
+    
+    this.verificationToken = crypto.createHash('sha256').update(this.verificationToken).digest('hex');
+    next();
 });
 
 module.exports = mongoose.model('UserUnverified', UserUnverifiedSchema);
