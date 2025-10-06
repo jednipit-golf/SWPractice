@@ -1,4 +1,6 @@
 const User = require('../models/User');
+const UserUnverified = require('../models/UserUnverified');
+const crypto = require('crypto');
 
 //@desc     Register user
 //@route    POST /api/v1/auth/register
@@ -6,21 +8,38 @@ const User = require('../models/User');
 exports.register=async (req,res,next)=>{ 
     try{
         const {name, email, password, telephone, role}=req.body;
-        //Create user
-        const user=await User.create({
+        
+        // Check if user already exists in verified users
+        const existingUser = await User.findOne({$or: [{email}, {telephone}]});
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email or telephone already exists'
+            });
+        }
+
+        // Generate verification token
+        const verificationToken = crypto.randomBytes(20).toString('hex');
+        const verificationExpire = new Date(Date.now() + 3600000); // 1 hour
+
+        // Create unverified user
+        const userUnverified = await UserUnverified.create({
             name, 
             email,
             telephone,
             password, 
-            role
+            role,
+            verificationToken,
+            verificationExpire
         });
-        //Create token
-        const token=user.getSignedJwtToken();
-        sendTokenResponse(user, 200, res);
 
-        res.status(200).json({success:true,token});
+        res.status(201).json({
+            success: true,
+            message: 'Registration successful. Please check your email for verification.',
+            verificationToken // In production, this should be sent via email
+        });
     } catch(err){ 
-        res.status(400).json({success:false}); 
+        res.status(400).json({success:false, message: err.message}); 
         console.log(err.stack);
     }
 };
@@ -104,4 +123,57 @@ exports.getMe=async(req, res, next)=>{
         success:true, 
         data:user
     });
+};
+
+//@desc     Verify user email
+//@route    POST /api/v1/auth/verify
+//@access   Public
+exports.verifyUser = async (req, res, next) => {
+    try {
+        const { email, verificationToken } = req.body;
+
+        if (!email || !verificationToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Please provide email and verification token'
+            });
+        }
+
+        // Find unverified user
+        const unverifiedUser = await UserUnverified.findOne({
+            email,
+            verificationToken,
+            verificationExpire: { $gt: Date.now() }
+        }).select('+password');
+
+        if (!unverifiedUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid or expired verification token'
+            });
+        }
+
+        // Create verified user
+        const verifiedUser = await User.create({
+            name: unverifiedUser.name,
+            email: unverifiedUser.email,
+            telephone: unverifiedUser.telephone,
+            password: unverifiedUser.password,
+            role: unverifiedUser.role
+        });
+
+        // Delete from unverified collection
+        await UserUnverified.findByIdAndDelete(unverifiedUser._id);
+
+        // Generate token for immediate login
+        const token = verifiedUser.getSignedJwtToken();
+        sendTokenResponse(verifiedUser, 200, res);
+
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({
+            success: false,
+            message: 'Verification failed'
+        });
+    }
 };
