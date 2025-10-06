@@ -4,14 +4,14 @@ const sendEmail = async (options) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: process.env.SMTP_EMAIL,     // Gmail ของคุณ
-      pass: process.env.SMTP_PASSWORD,  // App Password ของ Gmail
+      user: process.env.SMTP_EMAIL,     
+      pass: process.env.SMTP_PASSWORD,  
     },
   });
 
   const message = {
     from: `${process.env.FROM_NAME} <${process.env.FROM_EMAIL}>`,
-    to: options.email,     // string หรือ "a@gmail.com, b@gmail.com"
+    to: options.email,     
     subject: options.subject,
     text: options.message,
   };
