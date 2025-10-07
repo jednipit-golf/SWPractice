@@ -13,13 +13,13 @@ const validateAppointmentTime = (apptTime, openTime, closeTime) => {
     const closeMinutes = timeToMinutes(closeTime);
 
     // Debug logging
-    console.log('Appointment Minute', apptMinutes);
-    console.log('Open Time (minutes):', openMinutes, `(${openTime})`);
-    console.log('Close Time (minutes):', closeMinutes, `(${closeTime})`);
+    // console.log('Appointment Minute', apptMinutes);
+    // console.log('Open Time (minutes):', openMinutes, `(${openTime})`);
+    // console.log('Close Time (minutes):', closeMinutes, `(${closeTime})`);
 
     // Check if appointment time is within operating hours (inclusive)
     const isValid = apptMinutes >= openMinutes && apptMinutes <= closeMinutes;
-    console.log('Is Valid:', isValid);
+    // console.log('Is Valid:', isValid);
 
     return isValid;
 };
@@ -45,12 +45,12 @@ const timeCancellingPolicyCheck = (apptDate, apptTime) => {
     const hoursUntilAppointment = timeDifference / (1000 * 60 * 60);
     
     // Debug logging
-    console.log('Appointment Date:', apptDate);
-    console.log('Appointment Time:', apptTime);
-    console.log('Appointment DateTime:', appointmentDateTime);
-    console.log('Current Time:', currentTime);
-    console.log('Hours Until Appointment:', hoursUntilAppointment);
-    console.log('Can Cancel (>=3 hours):', hoursUntilAppointment >= 3);
+    // console.log('Appointment Date:', apptDate);
+    // console.log('Appointment Time:', apptTime);
+    // console.log('Appointment DateTime:', appointmentDateTime);
+    // console.log('Current Time:', currentTime);
+    // console.log('Hours Until Appointment:', hoursUntilAppointment);
+    // console.log('Can Cancel (>=3 hours):', hoursUntilAppointment >= 3);
     
     // Allow cancellation if appointment is more than 3 hours away
     return hoursUntilAppointment >= 3;
