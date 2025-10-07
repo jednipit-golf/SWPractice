@@ -1,6 +1,6 @@
 const Reservation = require('../models/Reservation');
 const MassageShop = require('../models/MassageShop');
-const { validateAppointmentTime } = require('../utils/validateTime');
+const { validateAppointmentTime, timeCancellingPolicyCheck } = require('../utils/validateTime');
 const { validateDateFormat } = require('../utils/dateCheck');
 const { validateTimeFormat } = require('../utils/timeCheck');
 
@@ -193,12 +193,11 @@ exports.updateReservations = async (req, res, next) => {
             });
         }
 
-        // If updating appointment date or massage shop, validate time
+        // If updating appointment time or massage shop, check validate time
         if (req.body.apptDate || req.body.apptTime || req.body.massageShop) {
             const massageShopId = req.body.massageShop || reservation.massageShop;
-            const apptDate = req.body.apptDate || reservation.apptDate;
             const apptTime = req.body.apptTime || reservation.apptTime;
-            
+
             const massageShop = await MassageShop.findById(massageShopId);
             if (!massageShop) {
                 return res.status(404).json({
@@ -212,6 +211,14 @@ exports.updateReservations = async (req, res, next) => {
                 return res.status(400).json({
                     success: false,
                     message: `Appointment time must be between ${massageShop.openTime} and ${massageShop.closeTime}`
+                });
+            }
+
+            // Check cancellation policy for owner and admin users)
+            if (!timeCancellingPolicyCheck(reservation.apptDate, reservation.apptTime)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Reservations can only be changed at least 3 hours before the appointment time'
                 });
             }
         }
@@ -253,6 +260,16 @@ exports.deleteReservations = async (req, res, next) => {
                 success: false,
                 message: 'User ' + req.user.id + ' is not authorized to delete this reservation'
             });
+        }
+
+        // Check cancellation policy for owner and admin users)
+        if (reservation.user.toString() == req.user.id || req.user.role == 'admin') {
+            if (!timeCancellingPolicyCheck(reservation.apptDate, reservation.apptTime)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Reservations can only be cancelled at least 3 hours before the appointment time'
+                });
+            }
         }
 
         await reservation.deleteOne();
