@@ -1,6 +1,8 @@
 const Reservation = require('../models/Reservation');
 const MassageShop = require('../models/MassageShop');
 const { validateAppointmentTime } = require('../utils/validateTime');
+const { validateDateFormat } = require('../utils/dateCheck');
+const { validateTimeFormat } = require('../utils/timeCheck');
 
 //@desc     Get all reservations
 //@route    GET /api/v1/reservation
@@ -86,6 +88,22 @@ exports.addReservations = async (req, res, next) => {
     try {
         req.body.user = req.user.id;
 
+        // Validate apptDate format (DD-MM-YYYY)
+        if (req.body.apptDate && !validateDateFormat(req.body.apptDate)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment date format. Please use DD-MM-YYYY format'
+            });
+        }
+
+        // Validate apptTime format (HH:MM)
+        if (req.body.apptTime && !validateTimeFormat(req.body.apptTime)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment time format. Please use HH:MM format'
+            });
+        }
+
         // Check if massage shop exists and get its operating hours
         const massageShop = await MassageShop.findById(req.body.massageShop);
         if (!massageShop) {
@@ -134,6 +152,22 @@ exports.addReservations = async (req, res, next) => {
 //@access   Private
 exports.updateReservations = async (req, res, next) => {
     try {
+        // Validate apptDate format if provided (DD-MM-YYYY)
+        if (req.body.apptDate && !validateDateFormat(req.body.apptDate)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment date format. Please use DD-MM-YYYY format'
+            });
+        }
+
+        // Validate apptTime format if provided (HH:MM)
+        if (req.body.apptTime && !validateTimeFormat(req.body.apptTime)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment time format. Please use HH:MM format'
+            });
+        }
+
         let reservation = await Reservation.findById(req.params.id);
 
         if (!reservation) {
