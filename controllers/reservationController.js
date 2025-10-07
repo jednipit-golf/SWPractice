@@ -1,6 +1,8 @@
 const Reservation = require('../models/Reservation');
 const MassageShop = require('../models/MassageShop');
-const { validateAppointmentTime } = require('../utils/validateTime');
+const { validateAppointmentTime, timeCancellingPolicyCheck } = require('../utils/validateTime');
+const { validateDateFormat } = require('../utils/dateCheck');
+const { validateTimeFormat } = require('../utils/timeCheck');
 
 //@desc     Get all reservations
 //@route    GET /api/v1/reservation
@@ -86,6 +88,22 @@ exports.addReservations = async (req, res, next) => {
     try {
         req.body.user = req.user.id;
 
+        // Validate apptDate format (DD-MM-YYYY)
+        if (req.body.apptDate && !validateDateFormat(req.body.apptDate)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment date format. Please use DD-MM-YYYY format'
+            });
+        }
+
+        // Validate apptTime format (HH:MM)
+        if (req.body.apptTime && !validateTimeFormat(req.body.apptTime)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment time format. Please use HH:MM format'
+            });
+        }
+
         // Check if massage shop exists and get its operating hours
         const massageShop = await MassageShop.findById(req.body.massageShop);
         if (!massageShop) {
@@ -96,7 +114,7 @@ exports.addReservations = async (req, res, next) => {
         }
 
         // Validate appointment time is within operating hours
-        if (!validateAppointmentTime(req.body.apptDate, massageShop.openTime, massageShop.closeTime)) {
+        if (!validateAppointmentTime(req.body.apptTime, massageShop.openTime, massageShop.closeTime)) {
             return res.status(400).json({
                 success: false,
                 message: `Appointment time must be between ${massageShop.openTime} and ${massageShop.closeTime}`
@@ -134,6 +152,22 @@ exports.addReservations = async (req, res, next) => {
 //@access   Private
 exports.updateReservations = async (req, res, next) => {
     try {
+        // Validate apptDate format if provided (DD-MM-YYYY)
+        if (req.body.apptDate && !validateDateFormat(req.body.apptDate)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment date format. Please use DD-MM-YYYY format'
+            });
+        }
+
+        // Validate apptTime format if provided (HH:MM)
+        if (req.body.apptTime && !validateTimeFormat(req.body.apptTime)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid appointment time format. Please use HH:MM format'
+            });
+        }
+
         let reservation = await Reservation.findById(req.params.id);
 
         if (!reservation) {
@@ -159,10 +193,10 @@ exports.updateReservations = async (req, res, next) => {
             });
         }
 
-        // If updating appointment date or massage shop, validate time
-        if (req.body.apptDate || req.body.massageShop) {
+        // If updating appointment time or massage shop, validate appointment time
+        if (req.body.apptDate || req.body.apptTime || req.body.massageShop) {
             const massageShopId = req.body.massageShop || reservation.massageShop;
-            const apptDate = req.body.apptDate || reservation.apptDate;
+            const apptTime = req.body.apptTime || reservation.apptTime;
 
             const massageShop = await MassageShop.findById(massageShopId);
             if (!massageShop) {
@@ -173,10 +207,18 @@ exports.updateReservations = async (req, res, next) => {
             }
 
             // Validate appointment time is within operating hours
-            if (!validateAppointmentTime(apptDate, massageShop.openTime, massageShop.closeTime)) {
+            if (!validateAppointmentTime(apptTime, massageShop.openTime, massageShop.closeTime)) {
                 return res.status(400).json({
                     success: false,
                     message: `Appointment time must be between ${massageShop.openTime} and ${massageShop.closeTime}`
+                });
+            }
+
+            // Check cancellation policy for owner and admin users
+            if (!timeCancellingPolicyCheck(reservation.apptDate, reservation.apptTime)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Reservations can only be changed at least 3 hours before the appointment time'
                 });
             }
         }
@@ -218,6 +260,16 @@ exports.deleteReservations = async (req, res, next) => {
                 success: false,
                 message: 'User ' + req.user.id + ' is not authorized to delete this reservation'
             });
+        }
+
+        // Check cancellation policy for owner and admin users
+        if (reservation.user.toString() == req.user.id || req.user.role == 'admin') {
+            if (!timeCancellingPolicyCheck(reservation.apptDate, reservation.apptTime)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Reservations can only be cancelled at least 3 hours before the appointment time'
+                });
+            }
         }
 
         await reservation.deleteOne();
