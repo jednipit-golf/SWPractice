@@ -1,6 +1,6 @@
 const Reservation = require('../models/Reservation');
 const MassageShop = require('../models/MassageShop');
-const { validateAppointmentTime, timeCancellingPolicyCheck } = require('../utils/validateTime');
+const { validateAppointmentTime, timeCancellingPolicyCheck ,timePastingCheck} = require('../utils/validateTime');
 const { validateDateFormat } = require('../utils/dateCheck');
 const { validateTimeFormat } = require('../utils/timeCheck');
 const User = require('../models/User');
@@ -153,6 +153,13 @@ exports.addReservations = async (req, res, next) => {
             return res.status(404).json({
                 success: false,
                 message: 'Massage shop not found'
+            });
+        }
+
+        if (timePastingCheck(req.body.apptDate, req.body.apptTime)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot create reservation for a past time'
             });
         }
 
