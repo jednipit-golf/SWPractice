@@ -35,7 +35,8 @@ exports.register = async (req, res, next) => {
         }
 
         // Generate verification token (6-digit number)
-        const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+
+        const verificationToken = crypto.randomInt(100000, 999999).toString();
         const verificationExpire = new Date(Date.now() + 600000); // 10 minutes
 
         let userUnverified;
@@ -117,11 +118,8 @@ exports.login = async (req, res, next) => {
         });
     }
 
-    //Create token
-    const token = user.getSignedJwtToken();
-    sendTokenResponse(user, 200, res);
-
-    res.status(200).json({ success: true, token });
+    //return token
+    return sendTokenResponse(user, 200, res);
 };
 
 //@desc     Logout user
@@ -245,8 +243,8 @@ exports.verifyUser = async (req, res, next) => {
         await UserUnverified.findByIdAndDelete(unverifiedUser._id);
 
         // Generate token for immediate login
-        const token = verifiedUser.getSignedJwtToken();
-        sendTokenResponse(verifiedUser, 200, res);
+        // const token = verifiedUser.getSignedJwtToken();
+        return sendTokenResponse(verifiedUser, 200, res);
 
     } catch (error) {
         console.log(error);
