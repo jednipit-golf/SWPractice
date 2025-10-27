@@ -6,6 +6,8 @@ const sanitizeMiddleware = require('./middleware/sanitizeMiddleware');
 const helmet=require('helmet');
 const {xss}=require('express-xss-sanitizer');
 const limiter = require('./middleware/rateLimiter');
+const hpp=require('hpp');
+const cors=require('cors');
 
 //Route files
 const authRouthes = require('./routes/authRoutes');
@@ -36,6 +38,12 @@ app.use(xss());
 
 // Apply rate limiter 
 app.use(limiter);
+
+//Prevent http param pollutions
+app.use(hpp());
+
+//Enable CORS
+app.use(cors());
 
 app.use('/api/v1/auth/', authRouthes);
 app.use('/api/v1/reservation/', reservationRoutes);
