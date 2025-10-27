@@ -87,39 +87,43 @@ exports.register = async (req, res, next) => {
 //@route    POST /api/v1/auth/login
 //@access   Public
 exports.login = async (req, res, next) => {
-    const { email, password } = req.body;
+    try {
+        const { email, password } = req.body;
 
-    //Validate email & password
-    if (!email || !password) {
-        return res.status(400).json({
-            success: false,
-            msg: 'Please provide an email and password'
-        });
+        //Validate email & password
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                msg: 'Please provide an email and password'
+            });
+        }
+
+        //Check for user
+        const user = await
+            User.findOne({ email }).select('+password');
+
+        if (!user) {
+            return res.status(400).json({
+                success: false,
+                msg: 'Invalid credentials'
+            });
+        }
+
+        //Check if password matches
+        const isMatch = await user.matchPassword(password);
+
+        if (!isMatch) {
+            return res.status(401).json({
+                success: false,
+                msg: 'Invalid credentials'
+            });
+        }
+
+        //return token
+        return sendTokenResponse(user, 200, res);
+    } catch (err) {
+        res.status(401).json({ success: false, msg: 'Login failed. Please try again.' });
     }
-
-    //Check for user
-    const user = await
-        User.findOne({ email }).select('+password');
-
-    if (!user) {
-        return res.status(400).json({
-            success: false,
-            msg: 'Invalid credentials'
-        });
-    }
-
-    //Check if password matches
-    const isMatch = await user.matchPassword(password);
-
-    if (!isMatch) {
-        return res.status(401).json({
-            success: false,
-            msg: 'Invalid credentials'
-        });
-    }
-
-    //return token
-    return sendTokenResponse(user, 200, res);
 };
 
 //@desc     Logout user

@@ -2,6 +2,12 @@ const express = require('express');
 const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
+const sanitizeMiddleware = require('./middleware/sanitizeMiddleware');
+const helmet = require('helmet');
+const { xss } = require('express-xss-sanitizer');
+const limiter = require('./middleware/rateLimiter');
+const hpp = require('hpp');
+const cors = require('cors');
 
 //Route files
 const authRouthes = require('./routes/authRoutes');
@@ -20,6 +26,24 @@ app.use(express.json());
 
 //Cookie parser
 app.use(cookieParser());
+
+//Sanitize data
+app.use(sanitizeMiddleware);
+
+//Set security headers
+app.use(helmet());
+
+//Prevent XSS attacks
+app.use(xss());
+
+// Apply rate limiter 
+app.use(limiter);
+
+//Prevent http param pollutions
+app.use(hpp());
+
+//Enable CORS
+app.use(cors());
 
 app.use('/api/v1/auth/', authRouthes);
 app.use('/api/v1/reservation/', reservationRoutes);
