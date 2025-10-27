@@ -3,11 +3,11 @@ const dotenv = require('dotenv');
 const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 const sanitizeMiddleware = require('./middleware/sanitizeMiddleware');
-const helmet=require('helmet');
-const {xss}=require('express-xss-sanitizer');
+const helmet = require('helmet');
+const { xss } = require('express-xss-sanitizer');
 const limiter = require('./middleware/rateLimiter');
-const hpp=require('hpp');
-const cors=require('cors');
+const hpp = require('hpp');
+const cors = require('cors');
 
 //Route files
 const authRouthes = require('./routes/authRoutes');

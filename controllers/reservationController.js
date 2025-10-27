@@ -1,6 +1,6 @@
 const Reservation = require('../models/Reservation');
 const MassageShop = require('../models/MassageShop');
-const { validateAppointmentTime, timeCancellingPolicyCheck ,timePastingCheck} = require('../utils/validateTime');
+const { validateAppointmentTime, timeCancellingPolicyCheck, timePastingCheck } = require('../utils/validateTime');
 const { validateDateFormat } = require('../utils/dateCheck');
 const { validateTimeFormat } = require('../utils/timeCheck');
 const User = require('../models/User');
