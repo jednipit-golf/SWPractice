@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const UserUnverified = require('../models/UserUnverified');
 const crypto = require('crypto');
-const { sendVerificationEmail } = require('../utils/sendEmail');
+const { sendVerificationEmailAsync} = require('../utils/sendEmail');
 
 //@desc     Register user
 //@route    POST /api/v1/auth/register
@@ -25,7 +25,7 @@ exports.register = async (req, res, next) => {
         // Check rate limiting for existing unverified users
         if (existingUnverifiedUser) {
             const timeSinceLastToken = Date.now() - existingUnverifiedUser.lastTokenSent.getTime();
-            if (timeSinceLastToken < 90000) { // 90000
+            if (timeSinceLastToken < 90000) { // 90000 millisec = 90 วิ
                 const waitTime = Math.ceil((90000 - timeSinceLastToken) / 1000);
                 return res.status(429).json({
                     success: false,
@@ -69,8 +69,8 @@ exports.register = async (req, res, next) => {
         }
 
         // Send verification email with plaintext token
-        await sendVerificationEmail(email, verificationToken);
-
+        await sendVerificationEmailAsync(email, verificationToken);
+        
         res.status(201).json({
             success: true,
             message: existingUnverifiedUser
