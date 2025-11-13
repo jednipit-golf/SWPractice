@@ -47,6 +47,7 @@ VacQ/
 │   └── reservationRoutes.js            # Defines reservation API endpoints
 ├── utils/
 │   ├── dateCheck.js                    # Utility functions to validate dates
+│   ├── emailQueue.js                   # Utility for send email as a queue
 │   ├── sendEmail.js                    # Utility to send emails (e.g., OTP)
 │   ├── timeCheck.js                    # Utility to check time-related conditions
 │   └── validateTime.js                 # Validate reservation times and cancellation rules
