@@ -30,6 +30,7 @@ VacQ/
 │   └── config.env                      # Environment variables
 ├── controllers/
 │   ├── authController.js               # Handles user registration, login, logout, OTP verification
+│   ├── massageshopController.js        # Handles CRUD operations for massageshop 
 │   └── reservationsController.js       # Handles CRUD operations for reservations
 ├── middleware/
 │   ├── authauthMiddleware.js           # Protect routes, check JWT authentication
@@ -42,7 +43,8 @@ VacQ/
 │   └── MassageShop.js                  # Massage shop schema and model
 ├── routes/
 │   ├── authRoutes.js                   # Defines authentication API endpoints
-│   ├── reservationRoutes.js            # Defines reservation API endpoints
+│   ├── massageshopRoutes.js            # Defines massageshop API endpoints
+│   └── reservationRoutes.js            # Defines reservation API endpoints
 ├── utils/
 │   ├── dateCheck.js                    # Utility functions to validate dates
 │   ├── sendEmail.js                    # Utility to send emails (e.g., OTP)
