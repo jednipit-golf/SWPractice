@@ -176,8 +176,7 @@ exports.addReservations = async (req, res, next) => {
         // Check for number of existing reservations for the target user
         const existingReservations = await Reservation.find({ user: targetUserId });
 
-        // If the target user is not an admin and the requester is not an admin, enforce 3-reservation limit
-        if (existingReservations.length >= 3 && req.user.role !== 'admin') {
+        if (existingReservations.length >= 3) {
             return res.status(400).json({
                 success: false,
                 message: `The user with ID ${targetUserId} has already made 3 reservations`
@@ -315,7 +314,7 @@ exports.deleteReservations = async (req, res, next) => {
         }
 
         // Check cancellation policy for owner and admin users
-        if (reservation.user.toString() == req.user.id || req.user.role == 'admin') {
+        if (reservation.user.toString() == req.user.id || req.user.role !== 'admin') {
             if (!timeCancellingPolicyCheck(reservation.apptDate, reservation.apptTime)) {
                 return res.status(400).json({
                     success: false,

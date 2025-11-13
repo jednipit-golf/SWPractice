@@ -1,6 +1,6 @@
-const sendVerificationEmailAsync = (email, verificationToken) => {
-  const emailQueue = require('./emailQueue');
+const emailQueue = require('./emailQueue');
 
+const sendVerificationEmailAsync = (email, verificationToken) => {
   const message = `
 Hello,
 
